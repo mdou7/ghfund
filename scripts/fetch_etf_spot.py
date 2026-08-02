@@ -3,12 +3,19 @@ from __future__ import annotations
 
 import sys
 import time
+from datetime import datetime
+from pathlib import Path
 from typing import Callable, TypeVar
+from zoneinfo import ZoneInfo
+
+import pandas as pd
 
 T = TypeVar("T")
 
 RETRY_ATTEMPTS = 3
 RETRY_BACKOFF_SECONDS = (5, 15)
+BEIJING_TZ = ZoneInfo("Asia/Shanghai")
+DATA_DIR = Path("data")
 
 
 def fetch_with_retry(
@@ -26,3 +33,14 @@ def fetch_with_retry(
             if attempt < attempts - 1:
                 time.sleep(backoff[min(attempt, len(backoff) - 1)])
     raise RuntimeError(f"all {attempts} attempts failed") from last_exc
+
+
+def snapshot_path(base_dir: Path, now: datetime) -> Path:
+    date_part = now.strftime("%Y-%m-%d")
+    time_part = now.strftime("%H%M%S")
+    return base_dir / date_part / f"{time_part}.csv"
+
+
+def save_snapshot(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False, encoding="utf-8-sig")

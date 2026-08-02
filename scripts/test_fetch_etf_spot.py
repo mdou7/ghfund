@@ -48,3 +48,31 @@ def test_fetch_with_retry_raises_after_exhausting_attempts(monkeypatch):
         fetch_with_retry(fetch_fn, attempts=3, backoff=(5, 15))
 
     assert len(calls) == 3
+
+
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+from fetch_etf_spot import BEIJING_TZ, save_snapshot, snapshot_path
+
+
+def test_snapshot_path_builds_path_from_beijing_time():
+    now = datetime(2026, 8, 2, 15, 30, 5, tzinfo=BEIJING_TZ)
+
+    path = snapshot_path(Path("data"), now)
+
+    assert path == Path("data/2026-08-02/153005.csv")
+
+
+def test_save_snapshot_writes_csv_and_creates_parent_dirs(tmp_path):
+    df = pd.DataFrame({"代码": ["159527"], "名称": ["云计算ETF广发"], "最新价": [0.713]})
+    target = tmp_path / "2026-08-02" / "153005.csv"
+
+    save_snapshot(df, target)
+
+    assert target.exists()
+    result = pd.read_csv(target, encoding="utf-8-sig")
+    assert result.loc[0, "名称"] == "云计算ETF广发"
+    assert list(result.columns) == ["代码", "名称", "最新价"]
