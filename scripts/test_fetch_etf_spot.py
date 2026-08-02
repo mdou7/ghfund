@@ -76,3 +76,18 @@ def test_save_snapshot_writes_csv_and_creates_parent_dirs(tmp_path):
     result = pd.read_csv(target, encoding="utf-8-sig")
     assert result.loc[0, "名称"] == "云计算ETF广发"
     assert list(result.columns) == ["代码", "名称", "最新价"]
+
+
+def test_main_fetches_and_saves_snapshot(monkeypatch, tmp_path):
+    import fetch_etf_spot
+
+    fake_df = pd.DataFrame({"代码": ["159527"], "名称": ["云计算ETF广发"]})
+    monkeypatch.setattr(fetch_etf_spot.ak, "fund_etf_spot_em", lambda: fake_df)
+    monkeypatch.setattr(fetch_etf_spot, "DATA_DIR", tmp_path)
+
+    fetch_etf_spot.main()
+
+    saved_files = list(tmp_path.rglob("*.csv"))
+    assert len(saved_files) == 1
+    result = pd.read_csv(saved_files[0], encoding="utf-8-sig")
+    assert result.loc[0, "名称"] == "云计算ETF广发"

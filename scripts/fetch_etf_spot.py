@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Callable, TypeVar
 from zoneinfo import ZoneInfo
 
+import akshare as ak
 import pandas as pd
 
 T = TypeVar("T")
@@ -44,3 +45,15 @@ def snapshot_path(base_dir: Path, now: datetime) -> Path:
 def save_snapshot(df: pd.DataFrame, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False, encoding="utf-8-sig")
+
+
+def main() -> None:
+    now = datetime.now(BEIJING_TZ)
+    df = fetch_with_retry(ak.fund_etf_spot_em)
+    path = snapshot_path(DATA_DIR, now)
+    save_snapshot(df, path)
+    print(f"saved {len(df)} rows to {path}")
+
+
+if __name__ == "__main__":
+    main()
